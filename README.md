@@ -1,5 +1,7 @@
 # Cross-Asset Risk Monitor
 
+[![Daily pipeline](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml/badge.svg)](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml)
+
 > When cross-asset correlations break down, which assets decouple first and which follow — and can we identify systemic stress regimes in real time?
 
 An end-to-end data engineering project that ingests daily prices across equities, bonds, commodities, crypto, and FX, computes rolling cross-asset correlations in Snowflake via dbt, detects systemic **stress regimes**, ranks which assets **decouple first**, and visualizes it all in an interactive dashboard.
@@ -80,12 +82,31 @@ python dashboard/app.py                 # http://127.0.0.1:8050
 
 Or run the whole pipeline (ingest + dbt) with `./run_pipeline.sh`.
 
+## Orchestration
+
+A scheduled GitHub Actions workflow ([`.github/workflows/daily-ingest.yml`](.github/workflows/daily-ingest.yml)) runs the full pipeline once a day, after the US market close:
+
+1. **EL** — `ingest.py` full-refreshes `RAW.PRICES` from yfinance
+2. **T** — `dbt build` rebuilds and tests every model
+
+**Schedule.** GitHub cron runs in UTC and ignores daylight saving, so the workflow fires at both 22:00 and 23:00 UTC on weekdays, and a `gate` job admits only the trigger where the local time is actually 18:00 `America/New_York` — exactly 6pm ET year-round, with no double-runs. Manual runs are available via the **Run workflow** button (they skip the time gate).
+
+**Credentials.** The workflow reads Snowflake credentials from GitHub Actions secrets — add these under *Settings → Secrets and variables → Actions*:
+
+```
+SNOWFLAKE_ACCOUNT   SNOWFLAKE_USER       SNOWFLAKE_PASSWORD
+SNOWFLAKE_DATABASE  SNOWFLAKE_WAREHOUSE  SNOWFLAKE_ROLE
+```
+
+`dbt/profiles.yml` is committed but contains only `env_var()` references, so no credentials ever live in the repo.
+
 ## Data quality
 
 dbt ships 24 tests: source/column `not_null`, primary-key `unique`, `accepted_values` for window sizes and regime labels, and a singular test asserting every correlation lies in [-1, 1].
 
 ## Notes
 
-- **Secrets** live in `.env` (gitignored). Nothing sensitive is committed.
+- **Secrets** live in `.env` locally (gitignored) and in GitHub Actions secrets for CI. Nothing sensitive is committed.
 - ETH-USD history begins ~Aug 2017; earlier dates are simply absent for that asset.
 - The pipeline is a full refresh and is safe to re-run; `ingest.py` rebuilds `RAW.PRICES` and `dbt build` rebuilds all marts.
+- The dashboard caches Snowflake reads with a 15-minute TTL and has a **Refresh data** button to flush the cache on demand, so it reflects new pipeline runs without a restart.
