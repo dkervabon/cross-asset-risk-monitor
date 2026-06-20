@@ -1,8 +1,8 @@
 # Cross-Asset Risk Monitor
 
-**🔗 Live dashboard: [cross-asset-risk-monitor.onrender.com](https://cross-asset-risk-monitor.onrender.com)**
-
 Dashboard hosted on Render free tier — may take 30–60 seconds to wake on first load.
+
+**🔗 Live dashboard: [cross-asset-risk-monitor.onrender.com](https://cross-asset-risk-monitor.onrender.com)**
 
 [![Daily pipeline](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml/badge.svg)](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml)
 
