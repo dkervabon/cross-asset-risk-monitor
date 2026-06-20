@@ -1,0 +1,69 @@
+name: Daily yfinance ingestion
+
+# Pulls the latest prices and full-refreshes Snowflake RAW.PRICES once a day,
+# after the US market close.
+
+on:
+  schedule:
+    # GitHub cron runs in UTC and does NOT observe daylight saving. 6pm in
+    # America/New_York is 22:00 UTC during EDT (summer) and 23:00 UTC during
+    # EST (winter), so we fire at both times and let the `gate` job below admit
+    # exactly one run — the one where the local ET hour is actually 18:00.
+    - cron: '0 22 * * 1-5'   # 18:00 ET while EDT is in effect
+    - cron: '0 23 * * 1-5'   # 18:00 ET while EST is in effect
+  workflow_dispatch:          # allow manual runs from the Actions tab
+
+concurrency:
+  group: daily-ingest
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    # DST-aware guard: scheduled triggers only proceed at 18:00 ET; manual runs
+    # (workflow_dispatch) always proceed.
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        name: Proceed only at 18:00 America/New_York (or on manual dispatch)
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Manual dispatch — proceeding."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$(TZ=America/New_York date +%H)" = "18" ]; then
+            echo "Local ET hour is 18 — proceeding."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Local ET hour is $(TZ=America/New_York date +%H), not 18 — DST guard skipping this trigger."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ingest:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run EL ingestion (yfinance -> Snowflake RAW.PRICES)
+        working-directory: ingestion
+        env:
+          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
+        run: python ingest.py
