@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: fct_rolling_correlations
+    description: "Rolling 30d & 90d Pearson correlation per asset pair per date."
+    columns:
+      - name: corr_key
+        tests: [not_null, unique]
+      - name: correlation
+        tests: [not_null]
+      - name: window_days
+        tests:
+          - accepted_values:
+              values: [30, 90]
+
+  - name: fct_stress_regimes
+    description: "Daily average cross-asset correlation, z-score, and stress regime label."
+    columns:
+      - name: regime
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['STRESS', 'NORMAL', 'CALM', 'WARMUP']
+      - name: avg_corr
+        tests: [not_null]
+
+  - name: fct_decoupling_flags
+    description: "Per-asset decoupling/contagion z-scores and daily decoupling rank."
+    columns:
+      - name: ticker
+        tests: [not_null]
+      # decoupling_zscore is intentionally NULL during each asset's baseline warmup
+      # (trailing stddev undefined with too few points), so it is not tested not_null.
+
+  - name: fct_correlation_matrix_latest
+    description: "Symmetric correlation matrix for the latest date, per window (heatmap source)."
+    columns:
+      - name: correlation
+        tests: [not_null]

@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: raw
+    database: RISK_MONITOR
+    schema: RAW
+    tables:
+      - name: prices
+        description: "Daily adjusted close + volume per ticker, loaded from yfinance."
+        columns:
+          - name: date
+            description: "Trading date."
+            tests:
+              - not_null
+          - name: ticker
+            description: "yfinance ticker symbol."
+            tests:
+              - not_null
+          - name: adj_close
+            description: "Split/dividend-adjusted close."
+            tests:
+              - not_null

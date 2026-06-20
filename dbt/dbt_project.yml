@@ -1,0 +1,27 @@
+name: 'cross_asset_risk_monitor'
+version: '1.0.0'
+config-version: 2
+
+profile: 'risk_monitor'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  cross_asset_risk_monitor:
+    staging:
+      +schema: STAGING
+      +materialized: view
+    intermediate:
+      +schema: STAGING
+      +materialized: view
+    marts:
+      +schema: MARTS
+      +materialized: table

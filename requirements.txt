@@ -1,0 +1,8 @@
+yfinance>=0.2.40
+pandas>=2.0
+snowflake-connector-python[pandas]>=3.0
+python-dotenv>=1.0
+dbt-core>=1.11
+dbt-snowflake>=1.11
+dash>=2.17
+plotly>=5.22

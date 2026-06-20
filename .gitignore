@@ -1,0 +1,29 @@
+# Secrets — never commit
+.env
+profiles.yml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# dbt
+dbt/logs/
+dbt/target/
+dbt/dbt_packages/
+logs/
+
+# OS / editor / local tooling
+.DS_Store
+.idea/
+.vscode/
+.claude/
+dbt/.user.yml
+
+# Data dumps
+*.csv
+*.parquet
+*.duckdb

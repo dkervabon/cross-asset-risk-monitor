@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_prices
+    description: "Cleaned daily prices, one row per ticker per trading date."
+    columns:
+      - name: price_date
+        tests: [not_null]
+      - name: ticker
+        tests: [not_null]
+      - name: adj_close
+        tests: [not_null]
+
+  - name: stg_returns
+    description: "Daily log returns per ticker, aligned to the SPY trading calendar."
+    columns:
+      - name: log_return
+        tests: [not_null]
