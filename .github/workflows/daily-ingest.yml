@@ -1,7 +1,7 @@
-name: Daily yfinance ingestion
+name: Daily pipeline (ingest + dbt)
 
-# Pulls the latest prices and full-refreshes Snowflake RAW.PRICES once a day,
-# after the US market close.
+# Once a day after the US market close: full-refresh Snowflake RAW.PRICES from
+# yfinance (EL), then rebuild and test all dbt models (T).
 
 on:
   schedule:
@@ -67,3 +67,15 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
         run: python ingest.py
+
+      - name: Build + test dbt models (staging -> marts)
+        working-directory: dbt
+        env:
+          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
+          DBT_PROFILES_DIR:    ${{ github.workspace }}/dbt
+        run: dbt build

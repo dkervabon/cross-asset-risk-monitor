@@ -1,6 +1,7 @@
 # Secrets — never commit
 .env
-profiles.yml
+# Note: dbt/profiles.yml IS committed — it contains only env_var() references,
+# no literal secrets (credentials come from the environment / GitHub secrets).
 
 # Python
 __pycache__/

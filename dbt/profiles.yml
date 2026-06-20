@@ -1,0 +1,16 @@
+# Safe to commit: credentials are read from the environment (locally: export from
+# .env; in CI: GitHub Actions secrets). No literal secrets live in this file.
+risk_monitor:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      schema: PUBLIC
+      threads: 8
+      client_session_keep_alive: false
