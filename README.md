@@ -19,6 +19,20 @@ In normal markets, asset classes move on their own fundamentals and pairwise cor
 
 The output correctly surfaces known events — the COVID crash, the 2022 rate-hike bear market, the Sept 2022 dollar surge (the US Dollar Index decoupled first), and the April 2025 tariff shock.
 
+## Key Findings
+
+**1. Cross-asset diversification collapsed during the COVID crash**
+
+The average pairwise correlation across all 16 assets spiked from ~0.13 in calm 2019 to a peak of **0.31 on March 12, 2020 — 7.97 standard deviations** above its trailing-year norm, the most extreme reading in the entire 10-year window. As correlations converged, assets that normally offset each other fell together — the textbook signature of a systemic stress regime. Over the full period, 23% of trading days register as STRESS by this measure (90-day window).
+
+**2. The US dollar decoupled first during the 2022 rate-hike cycle**
+
+Ranking each asset daily by how sharply its correlation-to-the-market breaks from its own 60-day baseline, the **US Dollar Index (DX-Y.NYB) was the #1 decoupler on 68 trading days in 2022** — more than any other asset (EUR/USD was second at 57). As the Fed hiked aggressively, the resulting dollar surge pulled it away from a market where equities, bonds, and credit were increasingly falling together.
+
+**3. The classic stock/bond hedge inverted in the high-rate era**
+
+The 90-day SPY vs TLT correlation swung from a decade low of **−0.63 (March 10, 2020)**, when Treasuries rallied as equities crashed, to a high of **+0.41 (November 14, 2023)** — flipping from a strong hedge to positive co-movement. Bonds stopped protecting against equity drawdowns once rate risk, rather than growth risk, became the dominant market driver.
+
 ## Architecture
 
 ```
