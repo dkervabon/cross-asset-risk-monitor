@@ -4,10 +4,11 @@ Run:
     python dashboard/app.py
 then open http://127.0.0.1:8050
 """
+from datetime import datetime
+
 import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objects as go
-import plotly.express as px
 
 import data
 
@@ -135,6 +136,11 @@ main_column = html.Div(style={"flex": "1 1 auto", "minWidth": "0"}, children=[
         dcc.RadioItems(id="window", options=[{"label": " 30-day", "value": 30},
                                              {"label": " 90-day", "value": 90}],
                        value=90, inline=True),
+        html.Button("🔄 Refresh data", id="refresh-btn", n_clicks=0, style={
+            "marginLeft": "auto", "padding": "6px 14px", "cursor": "pointer",
+            "border": "1px solid #ccc", "borderRadius": "6px", "background": "#fff"}),
+        html.Span(id="refresh-status", style={"fontSize": "12px", "color": "#888"}),
+        dcc.Store(id="refresh-store", data=0),
     ]),
 
     dcc.Graph(id="heatmap"),
@@ -198,23 +204,38 @@ app.layout = html.Div(style={"maxWidth": "1280px", "margin": "0 auto",
 
 
 # -------------------------------- callbacks ---------------------------------
-@app.callback(Output("heatmap", "figure"), Input("window", "value"))
-def _heatmap(window):
+# Clicking Refresh flushes the data cache, then bumps refresh-store. Because the
+# figure callbacks below take refresh-store as an input, they re-fire AFTER the
+# cache is already cleared and re-query Snowflake for fresh marts.
+@app.callback(
+    Output("refresh-store", "data"),
+    Output("refresh-status", "children"),
+    Input("refresh-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def _refresh(n_clicks):
+    data.clear_caches()
+    return n_clicks, f"updated {datetime.now().strftime('%H:%M:%S')}"
+
+
+@app.callback(Output("heatmap", "figure"), Input("window", "value"), Input("refresh-store", "data"))
+def _heatmap(window, _token):
     return fig_heatmap(window)
 
 
-@app.callback(Output("pair", "figure"), Input("ta", "value"), Input("tb", "value"))
-def _pair(ta, tb):
+@app.callback(Output("pair", "figure"), Input("ta", "value"), Input("tb", "value"),
+              Input("refresh-store", "data"))
+def _pair(ta, tb, _token):
     return fig_pair(ta, tb)
 
 
-@app.callback(Output("regime", "figure"), Input("window", "value"))
-def _regime(window):
+@app.callback(Output("regime", "figure"), Input("window", "value"), Input("refresh-store", "data"))
+def _regime(window, _token):
     return fig_regime(window)
 
 
-@app.callback(Output("decoupling", "figure"), Input("window", "value"))
-def _decoupling(window):
+@app.callback(Output("decoupling", "figure"), Input("window", "value"), Input("refresh-store", "data"))
+def _decoupling(window, _token):
     return fig_decoupling(window)
 
 

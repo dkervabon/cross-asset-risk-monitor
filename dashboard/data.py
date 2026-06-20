@@ -1,10 +1,14 @@
 """Snowflake query helpers for the Dash dashboard.
 
-A tiny in-process cache keeps the app responsive — the marts are rebuilt by dbt,
-not by the app, so caching reads for the session is safe.
+Reads are cached with a short TTL so the app stays responsive without going
+stale: the marts are rebuilt by the daily pipeline (not the app), so a cached
+read only needs to live long enough to be snappy. Cached entries expire after
+CACHE_TTL_SECONDS, and the dashboard's "Refresh data" button calls
+clear_caches() to force an immediate re-query after a pipeline run.
 """
 import os
-from functools import lru_cache
+import time
+from functools import lru_cache, wraps
 from pathlib import Path
 
 import pandas as pd
@@ -13,6 +17,39 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
+
+CACHE_TTL_SECONDS = 900  # 15 minutes
+
+# registry of TTL-cached functions so clear_caches() can flush them all
+_TTL_CACHED = []
+
+
+def ttl_cache(ttl_seconds: int = CACHE_TTL_SECONDS):
+    """Like lru_cache but entries expire after ttl_seconds. Keyed on args."""
+    def decorator(fn):
+        store: dict = {}
+
+        @wraps(fn)
+        def wrapper(*args):
+            now = time.time()
+            hit = store.get(args)
+            if hit is not None and now - hit[1] < ttl_seconds:
+                return hit[0]
+            value = fn(*args)
+            store[args] = (value, now)
+            return value
+
+        wrapper.cache_clear = store.clear
+        _TTL_CACHED.append(wrapper)
+        return wrapper
+
+    return decorator
+
+
+def clear_caches() -> None:
+    """Flush every TTL-cached query (used by the Refresh button)."""
+    for fn in _TTL_CACHED:
+        fn.cache_clear()
 
 # Friendly names + asset class per ticker, in display order (grouped by class).
 # Drives both the heatmap ordering and the ticker-name appendix in the UI.
@@ -62,7 +99,7 @@ def _query(sql: str) -> pd.DataFrame:
         conn.close()
 
 
-@lru_cache(maxsize=8)
+@ttl_cache()
 def get_correlation_matrix(window_days: int) -> pd.DataFrame:
     """Symmetric latest-date correlation matrix, ordered by asset class."""
     df = _query(
@@ -79,7 +116,7 @@ def get_tickers() -> tuple:
     return tuple(ASSET_ORDER)
 
 
-@lru_cache(maxsize=64)
+@ttl_cache()
 def get_pair_history(ticker_a: str, ticker_b: str) -> pd.DataFrame:
     """Rolling correlation time series (both windows) for one pair, either ordering."""
     lo, hi = sorted([ticker_a, ticker_b])
@@ -91,7 +128,7 @@ def get_pair_history(ticker_a: str, ticker_b: str) -> pd.DataFrame:
     )
 
 
-@lru_cache(maxsize=4)
+@ttl_cache()
 def get_stress_regimes(window_days: int) -> pd.DataFrame:
     return _query(
         f"select price_date, avg_corr, corr_dispersion, corr_zscore, regime "
@@ -100,7 +137,7 @@ def get_stress_regimes(window_days: int) -> pd.DataFrame:
     )
 
 
-@lru_cache(maxsize=8)
+@ttl_cache()
 def get_decoupling_latest(window_days: int) -> pd.DataFrame:
     """Most recent day's per-asset decoupling leaderboard."""
     return _query(
@@ -118,6 +155,7 @@ def get_decoupling_latest(window_days: int) -> pd.DataFrame:
     )
 
 
+@ttl_cache()
 def get_latest_date(window_days: int) -> str:
     df = _query(
         f"select max(price_date) d from MARTS.fct_correlation_matrix_latest "
