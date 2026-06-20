@@ -1,0 +1,35 @@
+# Render Blueprint — deploys the Dash dashboard as a web service.
+# Spec: https://render.com/docs/blueprint-spec
+#
+# Deploy: push to GitHub, then in Render choose "New +" -> "Blueprint" and point
+# it at this repo. Render reads this file, creates the service, and prompts for
+# the secret env vars below (sync: false = not stored in the repo).
+services:
+  - type: web
+    name: cross-asset-risk-monitor
+    runtime: python
+    plan: free                # free web services sleep after inactivity
+    region: oregon
+    branch: main
+    buildCommand: pip install -r dashboard/requirements.txt
+    # gunicorn serves the Flask server Dash exposes as `server` in dashboard/app.py.
+    # --chdir puts dashboard/ on the import path so `app:server` and `import data` resolve.
+    startCommand: gunicorn --chdir dashboard app:server --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Snowflake credentials — set as secret env vars in the Render dashboard.
+      # sync: false keeps the values out of this committed blueprint.
+      - key: SNOWFLAKE_ACCOUNT
+        sync: false
+      - key: SNOWFLAKE_USER
+        sync: false
+      - key: SNOWFLAKE_PASSWORD
+        sync: false
+      - key: SNOWFLAKE_DATABASE
+        sync: false
+      - key: SNOWFLAKE_WAREHOUSE
+        sync: false
+      - key: SNOWFLAKE_ROLE
+        sync: false

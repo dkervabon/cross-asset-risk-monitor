@@ -1,0 +1,9 @@
+# Slim dependency set for the deployed Dash web service (Render).
+# The repo-root requirements.txt is the full dev/pipeline set (ingestion + dbt);
+# the dashboard only needs to query Snowflake and render Plotly, plus gunicorn.
+dash>=2.17
+plotly>=5.22
+pandas>=2.0
+snowflake-connector-python[pandas]>=3.0
+python-dotenv>=1.0
+gunicorn>=22.0
