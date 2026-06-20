@@ -14,14 +14,29 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
 
-# Display order + friendly names, grouped by asset class for a readable heatmap.
-ASSET_ORDER = [
-    "SPY", "XLF", "XLE", "XLK", "XLV", "XLI", "XLP",   # equity sectors
-    "TLT", "IEF", "HYG",                                # bonds
-    "GLD", "USO",                                       # commodities
-    "BTC-USD", "ETH-USD",                               # crypto
-    "DX-Y.NYB", "EURUSD=X",                             # fx
+# Friendly names + asset class per ticker, in display order (grouped by class).
+# Drives both the heatmap ordering and the ticker-name appendix in the UI.
+TICKER_META = [
+    ("SPY",      "S&P 500",            "Equity sectors"),
+    ("XLF",      "Financials",         "Equity sectors"),
+    ("XLE",      "Energy",             "Equity sectors"),
+    ("XLK",      "Technology",         "Equity sectors"),
+    ("XLV",      "Health Care",        "Equity sectors"),
+    ("XLI",      "Industrials",        "Equity sectors"),
+    ("XLP",      "Consumer Staples",   "Equity sectors"),
+    ("TLT",      "20+ Yr Treasuries",  "Bonds"),
+    ("IEF",      "7-10 Yr Treasuries", "Bonds"),
+    ("HYG",      "High Yield Credit",  "Bonds"),
+    ("GLD",      "Gold",               "Commodities"),
+    ("USO",      "Crude Oil",          "Commodities"),
+    ("BTC-USD",  "Bitcoin",            "Crypto"),
+    ("ETH-USD",  "Ethereum",           "Crypto"),
+    ("DX-Y.NYB", "US Dollar Index",    "FX"),
+    ("EURUSD=X", "EUR/USD",            "FX"),
 ]
+
+ASSET_ORDER = [t for t, _, _ in TICKER_META]
+TICKER_NAME = {t: name for t, name, _ in TICKER_META}
 
 
 def _connect():
@@ -94,7 +109,7 @@ def get_decoupling_latest(window_days: int) -> pd.DataFrame:
             select max(price_date) d from MARTS.fct_decoupling_flags
             where window_days = {window_days}
         )
-        select decoupling_rank, ticker, asset_avg_corr, baseline_corr,
+        select price_date, decoupling_rank, ticker, asset_avg_corr, baseline_corr,
                decoupling_score, decoupling_zscore, decoupling_flag, contagion_flag
         from MARTS.fct_decoupling_flags, latest
         where window_days = {window_days} and price_date = latest.d
