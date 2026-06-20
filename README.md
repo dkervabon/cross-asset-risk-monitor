@@ -1,5 +1,7 @@
 # Cross-Asset Risk Monitor
 
+Dashboard hosted on Render free tier — may take 30–60 seconds to wake on first load.
+
 [![Daily pipeline](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml/badge.svg)](https://github.com/dkervabon/cross-asset-risk-monitor/actions/workflows/daily-ingest.yml)
 
 > When cross-asset correlations break down, which assets decouple first and which follow — and can we identify systemic stress regimes in real time?
